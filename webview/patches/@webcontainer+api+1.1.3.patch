@@ -1,0 +1,59 @@
+diff --git a/node_modules/@webcontainer/api/dist/index.js b/node_modules/@webcontainer/api/dist/index.js
+index ca18380..600babd 100644
+--- a/node_modules/@webcontainer/api/dist/index.js
++++ b/node_modules/@webcontainer/api/dist/index.js
+@@ -7,7 +7,13 @@
+  */
+ import { formatFileSystemTree } from './util.js';
+ import { Comlink } from './vendor/index.js';
+-const DEFAULT_IFRAME_SOURCE = 'https://stackblitz.com/headless';
++// const DEFAULT_IFRAME_SOURCE = 'https://stackblitz.com/headless';
++const getIframeContent = async (origin) => {
++    const res = await fetch("https://fkunn1326-cors.deno.dev/https://stackblitz.com/headless?version=1.1.3");
++    const txt = await res.text();
++    const result = txt.replaceAll("http://localhost:3000", origin)
++    return result;
++};
+ let bootPromise = null;
+ let booted = false;
+ let destroyed = false;
+@@ -239,7 +245,7 @@ class FileSystemAPIClient {
+     }
+ }
+ async function unsynchronizedBoot(options) {
+-    const { iframe, serverPromise } = serverFactory(options);
++    const { iframe, serverPromise } = await serverFactory(options);
+     const server = await serverPromise;
+     const instance = await server.build({
+         host: window.location.host,
+@@ -267,16 +273,12 @@ function proxyListener(listener) {
+     }
+     return Comlink.proxy(listener);
+ }
+-function serverFactory(options) {
++async function serverFactory(options) {
+     const iframe = document.createElement('iframe');
+     iframe.style.display = 'none';
+     iframe.setAttribute('allow', 'cross-origin-isolated');
+-    const url = getIframeUrl();
+-    url.searchParams.set('version', "1.1.3");
+-    if (options.coep) {
+-        url.searchParams.set('coep', options.coep);
+-    }
+-    iframe.src = url.toString();
++    const url = new URL(window.location.href);
++    iframe.srcdoc = await getIframeContent(window.location.origin);
+     const { origin } = url;
+     const promise = new Promise((resolve) => {
+         const onMessage = (event) => {
+@@ -304,6 +306,6 @@ function isStringArray(list) {
+ function isTypedArrayCollection(list) {
+     return list[0] instanceof Uint8Array;
+ }
+-function getIframeUrl() {
+-    return new URL(window.WEBCONTAINER_API_IFRAME_URL ?? DEFAULT_IFRAME_SOURCE);
+-}
++// function getIframeUrl() {
++//     return new URL(window.WEBCONTAINER_API_IFRAME_URL ?? DEFAULT_IFRAME_SOURCE);
++// }
+\ No newline at end of file
